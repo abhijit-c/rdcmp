@@ -38,6 +38,7 @@ def single_pass_hep(
         tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximate
             eigenvalues and the second element is the approximate eigenvectors.
     """
+    # TODO: Fix these initial checks.
     if Omega is None:
         Omega = np.random.randn(A.shape[0], k)
     else:
