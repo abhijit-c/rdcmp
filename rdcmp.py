@@ -26,24 +26,25 @@ def single_pass_hep(
     Single pass randomized (generalized) spectral decomposition of a hermitian matrix.
 
     Args:
-        A (LinearOperator): The hermitian matrix to decompose.
+        A (LinearOperator): n x m hermitian matrix to decompose.
         k (int): The number of eigenpairs to approximate.
         Omega (np.ndarray | None): The random Gaussian matrix to use in the
-            decomposition. If None, a random Gaussian matrix will be generated. Defaults
-            to None.
+            decomposition. If None, a random Gaussian matrix will be generated.
+            Should have m rows and atleast k columns. Defaults to None.
         s (int): The number of power iterations to use in the decomposition. Defaults to
             1.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximate
-            eigenvalues and the second element is the approximate eigenvectors.
+        tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximation to
+            the k largest eigenvalues and the second element is the corresponding
+            approximate eigenvectors.
     """
-    # TODO: Fix these initial checks.
+    n, m = A.shape
     if Omega is None:
-        Omega = np.random.randn(A.shape[0], k)
+        Omega = np.random.randn(m, k)
     else:
-        if Omega.shape[0] != A.shape[1]:
-            raise ValueError("Omega must have the same number of rows as A.")
+        if Omega.shape[0] != m:
+            raise ValueError("Omega's number of rows must match A's number of columns.")
         elif Omega.shape[1] < k:
             raise ValueError("Omega must have at least k columns.")
     if k <= 0:
