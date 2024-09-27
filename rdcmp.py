@@ -15,8 +15,10 @@ __docformat__ = "google"
 
 import numpy as np
 import scipy.sparse as sps
+import scipy.sparse.linalg as spsla
 
-type LinearOperator = np.ndarray | sps.spmatrix | sps.linalg.LinearOperator
+type ExplicitLinearOperator = np.ndarray | sps.spmatrix
+type LinearOperator = ExplicitLinearOperator | spsla.LinearOperator
 
 
 def single_pass_hep(
@@ -71,7 +73,7 @@ def single_pass_hep(
 
 
 def double_pass_hep(
-    A: LinearOperator, k: int, Omega: np.ndarray | None = None, s: int = 1
+    A: LinearOperator, k: int, Omega: ExplicitLinearOperator | None = None, s: int = 1
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Double pass randomized (generalized) spectral decomposition of a hermitian matrix.
@@ -100,13 +102,13 @@ def double_pass_hep(
     if k <= 0:
         raise ValueError("k must be a positive integer.")
 
-    Y = Omega.copy()
+    Y = Omega.copy()  # type:ignore
     Y_pr = np.zeros_like(Y)
     for _ in range(s):
         Y_pr, Y = Y, Y_pr
         Y = A @ Y_pr
 
-    Q = np.linalg.qr(Y, mode="reduced")[0]
+    Q = np.linalg.qr(Y, mode="reduced")[0]  # type:ignore
 
     B = Q.T @ (A @ Q)
 
@@ -118,3 +120,32 @@ def double_pass_hep(
     U = Q @ V[:, desc_idx[0:k]]
 
     return d, U
+
+
+def chol_qr(
+    Y: np.ndarray, W: ExplicitLinearOperator | None = None
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Algorithm to compute the QR factorization of Y using an internal Cholesky
+    decomposition in the W-inner product.
+
+    Args:
+        Y (LinearOperator): The matrix to decompose.
+        W (np.ndarray | sps.spmatrix | None): The inner product to perform the
+            decomposition within. If None, then it's assumed to be the identity.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximate
+            eigenvalues and the second element is the approximate eigenvectors.
+    """
+    m, _ = Y.shape
+    if W is None:
+        W = np.eye(m, m)
+    if W.shape != (m, m):
+        raise ValueError("Y and W are not conformable!")
+    Z = W @ Y
+    C = Y.T @ Z
+    R = np.linalg.cholesky(C).T
+    Q = np.linalg.solve(R.T, Y.T).T
+    WQ = np.linalg.solve(R.T, Z.T).T
+    return Q, WQ, R
