@@ -89,4 +89,32 @@ def double_pass_hep(
         tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximate
             eigenvalues and the second element is the approximate eigenvectors.
     """
-    pass
+    n, m = A.shape
+    if Omega is None:
+        Omega = np.random.randn(m, k)
+    else:
+        if Omega.shape[0] != m:
+            raise ValueError("Omega's number of rows must match A's number of columns.")
+        elif Omega.shape[1] < k:
+            raise ValueError("Omega must have at least k columns.")
+    if k <= 0:
+        raise ValueError("k must be a positive integer.")
+
+    Y = Omega.copy()
+    Y_pr = np.zeros_like(Y)
+    for _ in range(s):
+        Y_pr, Y = Y, Y_pr
+        Y = A @ Y_pr
+
+    Q = np.linalg.qr(Y, mode="reduced")[0]
+
+    B = Q.T @ (A @ Q)
+
+    d, V = np.linalg.eigh(B)
+
+    desc_idx = np.argsort(-d)
+
+    d = d[desc_idx[0:k]]
+    U = Q @ V[:, desc_idx[0:k]]
+
+    return d, U
