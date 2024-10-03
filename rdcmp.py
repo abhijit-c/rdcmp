@@ -135,8 +135,7 @@ def chol_qr(
             decomposition within. If None, then it's assumed to be the identity.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: Tuple whose first element is the approximate
-            eigenvalues and the second element is the approximate eigenvectors.
+        tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple of Q, WQ, and R.
     """
     m, _ = Y.shape
     if W is None:
@@ -147,5 +146,6 @@ def chol_qr(
     C = Y.T @ Z
     R = np.linalg.cholesky(C).T
     Q = np.linalg.solve(R.T, Y.T).T
+    # TODO: Check WQ
     WQ = np.linalg.solve(R.T, Z.T).T
     return Q, WQ, R
